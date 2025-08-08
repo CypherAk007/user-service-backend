@@ -28,18 +28,23 @@ public class UserServiceImpl implements UserService{
 //    You're using a readable string and converting it to bytes using UTF-8.
 //            Keys.hmacShaKeyFor(byte[]) ensures that the key is properly wrapped as a SecretKey suitable for JJWT's signing.
 
-    private static final String SECRET_KEY_STRING = "your-super-secret-long-engough-key-for-hs256-encoding";
-    private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes(StandardCharsets.UTF_8));
+//    private static final String SECRET_KEY_STRING = "your-super-secret-long-engough-key-for-hs256-encoding";
+//    private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes(StandardCharsets.UTF_8));
 
     private static final long EXPIRATION_TIME_IN_MS = 10*60*60*1000;// 10 hours
 
     private UserRepository userRepository;
     private TokenRepository tokenRepository;
     BCryptPasswordEncoder bCryptPasswordEncoder ;
-    public UserServiceImpl(UserRepository userRepository,TokenRepository tokenRepository,BCryptPasswordEncoder bCryptPasswordEncoder){
+
+//    Create a bean and inject it
+    private final SecretKey secretKey;
+
+    public UserServiceImpl(UserRepository userRepository,TokenRepository tokenRepository,BCryptPasswordEncoder bCryptPasswordEncoder,SecretKey secretKey){
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.secretKey = secretKey;
     }
 
     @Override
@@ -82,7 +87,7 @@ public class UserServiceImpl implements UserService{
                 .setSubject(user.getEmail())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(SECRET_KEY,SignatureAlgorithm.HS256)//sign with HS256 - part C
+                .signWith(secretKey,SignatureAlgorithm.HS256)//sign with HS256 - part C
                 .compact();// combine all above
 
         Token token = new Token();
@@ -150,7 +155,7 @@ public class UserServiceImpl implements UserService{
         Claims claims;
         try{
             claims = Jwts.parserBuilder()
-                    .setSigningKey(SECRET_KEY)
+                    .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(tokenValue)
                     .getBody();
